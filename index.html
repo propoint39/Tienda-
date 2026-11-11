@@ -20,6 +20,10 @@ input,textarea,select{width:100%;background:var(--bg);color:var(--tx);border:1px
 input[type=checkbox]{width:auto}
 .tag{font-size:12px;border-radius:999px;padding:2px 9px}.a{background:#f59e0b33;color:var(--wa)}.c{background:#22c55e33;color:var(--ok)}.o{background:#ef444433;color:var(--rd)}
 .off{opacity:.55}img.rc{max-width:100%;border-radius:10px;margin-top:8px}.note{border-left:3px solid var(--ac);padding:8px 12px;border-radius:8px;background:var(--card)}
+.dsc.cl{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.more{background:none;border:0;color:#f5b72c;font:inherit;font-weight:600;padding:6px 0;cursor:pointer}
+.logo .desc{color:var(--tx);font-size:14px;margin:10px auto 0;max-width:520px;opacity:.9}
+.wab{display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:600;margin:12px 0 4px}
 </style></head><body><div class="w">
 <div class="logo" id="lg"><b>PRO <i>POINT</i></b><p>Pantallas y cuentas digitales · Todo en Pro y Plus</p></div>
 <div class="tabs" id="tabs"></div><div id="v"></div></div>
@@ -30,7 +34,7 @@ import {getFirestore,collection,doc,setDoc,addDoc,updateDoc,deleteDoc,onSnapshot
 
 /* ====== CONFIGURA ESTO (ver instrucciones) ====== */
 const CFG={apiKey:"AIzaSyCMO7HsHF8y7Ahg102PcXrG-4HRnPx29xo",authDomain:"pro-point-ff3cb.firebaseapp.com",projectId:"pro-point-ff3cb",appId:"1:827303779934:web:e676a371ef6fcf09791ecf"};
-const ADMIN="serranoemanuel274@gmail.com"; // tu correo de dueño: el mismo que pones en firestore.rules
+const ADMIN="propoint39@gmail.com"; // correo de dueño/administrador: debe ser el mismo que pones en firestore.rules
 /* ================================================= */
 
 if(CFG.apiKey==="PEGA_AQUI"){document.querySelector("#v").innerHTML=`<div class="card"><h2>Falta un paso</h2><p>Esta tienda ya está lista, pero aún no está conectada a tu cuenta de Firebase. Abre el archivo index.html con un editor de texto y pega ahí tus datos de Firebase y tu correo de dueño (donde dice PEGA_AQUI y TU_CORREO).</p></div>`;throw new Error("Falta configurar Firebase")}
@@ -90,12 +94,17 @@ const cop=n=>"$"+Number(n||0).toLocaleString("es-CO"),esc=s=>String(s??"").repla
 const $=s=>document.querySelector(s),wan=t=>{t=String(t).replace(/\D/g,"");return t.startsWith("57")?t:"57"+t};
 const wa=(t,m)=>"https://wa.me/"+wan(t)+"?text="+encodeURIComponent(m);
 let U=null,prof=null,admin=false,tab="tienda",cat="Todos",q="",P=[],O=[],M=[],USR=[],cart={},img=null,msg="",ofil="rev",mode="in";
-let cfg={wa:"573243426972",canal:"both",nequi:"3243426972",pago:"Paga por Nequi al 3243426972 y sube la captura del comprobante."};
+let cfg={wa:"573243426972",canal:"both",nequi:"3243426972",pago:"Paga por Nequi al 3243426972 y sube la captura del comprobante.",desc:"Pro Point es tu tienda de pantallas y cuentas digitales: streaming, música, TV en vivo, antivirus, herramientas y juegos. Entrega rápida, soporte por WhatsApp y precios accesibles.",breb:"",qr:""};
+const OPN=new Set();
+const descH=p=>{const long=p.d.length>180||(p.d.match(/\n/g)||[]).length>4,o=OPN.has(p.id);return`<div class="mu dsc ${long&&!o?"cl":""}" style="margin-top:4px;white-space:pre-line">${esc(p.d)}</div>${long?`<button class="more" data-more="${p.id}">${o?"Ver menos ⌃":"Ver más ⌄"}</button>`:""}`};
 let unsub=[];
 let chat=null,draft="";
 const bub=(m,own)=>`<div style="display:flex;justify-content:${own?"flex-end":"flex-start"}"><div style="max-width:82%;margin:4px 0;padding:8px 12px;border-radius:14px;background:${own?"var(--ac)":"var(--card)"};color:${own?"#fff":"var(--tx)"};border:1px solid var(--bd)">${m.img?`<img src="${m.img}" style="max-width:100%;border-radius:8px;display:block;margin-bottom:4px">`:""}${esc(m.txt).replace(/\n/g,"<br>")}<div style="font-size:11px;opacity:.7">${new Date(m.ts).toLocaleString("es-CO")}</div></div></div>`;
 var chImg=null;const LG0=document.querySelector("#lg").innerHTML;
-function logo(){document.querySelector("#lg").innerHTML=cfg.logo?`<img src="${cfg.logo}" style="max-width:220px;max-height:120px;border-radius:12px"><p>Pantallas y cuentas digitales · Todo en Pro y Plus</p>`:LG0}
+const fmt=n=>{n=String(n||"").replace(/\D/g,"");if(n.startsWith("57")&&n.length>10)n=n.slice(2);return n.replace(/(\d{3})(\d{3})(\d+)/,"$1 $2 $3")};
+const WAI='<svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.3.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.6.3.1.2.1.8-.1 1.4z"/></svg>';
+function logo(){const top=cfg.logo?`<img src="${cfg.logo}" style="max-width:220px;max-height:120px;border-radius:12px"><p>Pantallas y cuentas digitales · Todo en Pro y Plus</p>`:LG0;
+  document.querySelector("#lg").innerHTML=top+(cfg.desc?`<p class="desc">${esc(cfg.desc).replace(/\n/g,"<br>")}</p>`:"")+`<a class="wab" target="_blank" rel="noopener" href="${wa(cfg.wa,"Hola Pro Point, quiero más información")}">${WAI}${fmt(cfg.wa)}</a>`}
 
 function nav(){
   const nr=O.filter(o=>o.st==="rev").length,nm=M.filter(m=>!m.leido).length,nc=Object.values(cart).reduce((a,b)=>a+b,0);
@@ -115,7 +124,7 @@ function tienda(){
   const cats=["Todos",...new Set(P.map(p=>p.c))];
   const L=P.filter(p=>(cat==="Todos"||p.c===cat)&&p.n.toLowerCase().includes(q.toLowerCase()));
   $("#v").innerHTML=`<input id="q" placeholder="Buscar producto" value="${esc(q)}"><div class="tabs">${cats.map(c=>`<button class="chip ${cat===c?"on":""}" data-c="${c}">${c}</button>`).join("")}</div>`+
-  (L.map(p=>`<div class="card ${p.off?"off":""}"><div class="row"><div style="display:flex;align-items:center;gap:10px">${p.img?`<img src="${p.img}" style="width:64px;height:64px;object-fit:cover;border-radius:10px">`:""}<div>${esc(p.n)}<br><span class="tag ${p.off?"o":"c"}">${p.off?"Agotado":"Disponible"}</span>${p.d?`<div class="mu" style="margin-top:4px;white-space:pre-line">${esc(p.d)}</div>`:""}</div></div><div style="text-align:right"><div class="pr">${cop(p.p)}</div>${p.off?"":`<button class="btn" data-add="${p.id}">Agregar al carrito</button>`}</div></div></div>`).join("")||`<p class="mu">${P.length?"Sin resultados.":"Cargando catálogo…"}</p>`);
+  (L.map(p=>`<div class="card ${p.off?"off":""}"><div class="row"><div style="display:flex;align-items:center;gap:10px">${p.img?`<img src="${p.img}" style="width:64px;height:64px;object-fit:cover;border-radius:10px">`:""}<div>${esc(p.n)}<br><span class="tag ${p.off?"o":"c"}">${p.off?"Agotado":"Disponible"}</span>${p.d?descH(p):""}</div></div><div style="text-align:right"><div class="pr">${cop(p.p)}</div>${p.off?"":`<button class="btn" data-add="${p.id}">Agregar al carrito</button>`}</div></div></div>`).join("")||`<p class="mu">${P.length?"Sin resultados.":"Cargando catálogo…"}</p>`);
 }
 function cartV(){
   const ids=Object.keys(cart).filter(i=>price(i));
@@ -124,7 +133,7 @@ function cartV(){
   const ff=ids.some(i=>price(i).ff);
   $("#v").innerHTML=ids.map(i=>{const p=price(i);return`<div class="card row"><div>${esc(p.n)}<br><span class="mu">${cop(p.p)} c/u</span></div><div><button class="btn g" data-m="${i}">−</button> <b>${cart[i]}</b> <button class="btn g" data-add="${i}">+</button></div></div>`}).join("")+
   `<div class="card"><div class="row"><b>Total</b><b style="font-size:20px">${cop(total())}</b></div>
-  <div class="note" style="margin:10px 0">${esc(cfg.pago)}<br><b>Nequi: ${esc(cfg.nequi)}</b></div>
+  <div class="note" style="margin:10px 0">${esc(cfg.pago)}<br><b>Nequi: ${esc(cfg.nequi)}</b>${cfg.breb?`<br><b>Llave Bre-B: ${esc(cfg.breb)}</b> <button class="btn g" style="padding:4px 10px" data-copy="${esc(cfg.breb)}">Copiar</button>`:""}${cfg.qr?`<img class="rc" src="${cfg.qr}" alt="QR Nequi" style="display:block;margin:10px auto;max-width:230px;background:#fff;padding:8px">`:""}</div>
   ${U?`${ff?`<label class="mu">ID de Free Fire (obligatorio)</label><input id="ffid" inputmode="numeric" placeholder="Tu ID de jugador">`:""}
   <label class="mu">Foto o captura del pago</label><input id="cf" type="file" accept="image/*">${img?`<img class="rc" src="${img}">`:""}
   <button class="btn" id="send" style="margin-top:10px;width:100%">Enviar pedido</button><p class="mu" id="err"></p>`:`<p class="mu">Para comprar necesitas tu perfil.</p><button class="btn" data-t="login">Crear perfil o entrar</button>`}</div>`;
@@ -160,7 +169,7 @@ function bz(){
   const T=Object.values(G).map(L=>{L.sort((a,b)=>b.ts-a.ts);const c=L.find(m=>m.de!=="dueno")||{};return{uid:L[0].uid,nom:c.nom||"Cliente",last:L[0],un:L.filter(m=>m.de!=="dueno"&&!m.leido).length}}).sort((a,b)=>b.last.ts-a.last.ts);
   $("#v").innerHTML=T.map(c=>`<div class="card"><div class="row"><b>${esc(c.nom)}</b><span class="mu">${new Date(c.last.ts).toLocaleString("es-CO")}</span></div><p class="mu">${esc(c.last.txt).slice(0,90)}</p><button class="btn ${c.un?"":"g"}" data-chat="${c.uid}">${c.un?"Responder ("+c.un+" nuevos)":"Abrir chat"}</button></div>`).join("")||`<div class="card mu">Sin mensajes.</div>`}
 function usr(){$("#v").innerHTML=USR.map(u=>`<div class="card"><b>${esc(u.nom)}</b><br><span class="mu">${esc(u.email)} · ${esc(u.tel)}<br>Registrado: ${new Date(u.ts).toLocaleDateString("es-CO")}</span><br><a class="btn g" style="margin-top:6px" href="${wa(u.tel,"Hola "+u.nom+", te escribimos de Pro Point.")}">WhatsApp</a> ${u.email===ADMIN?"":`<button class="btn x" style="margin-top:6px" data-delu="${u.id}">Borrar</button>`}</div>`).join("")||`<div class="card mu">Aún no hay usuarios.</div>`}
-function aj(){$("#v").innerHTML=`<div class="card"><h2>Ajustes</h2><label class="mu">Número de Nequi</label><input id="an" value="${esc(cfg.nequi)}"><label class="mu">Indicaciones de pago</label><textarea id="ap" rows="3">${esc(cfg.pago)}</textarea><label class="mu">Tu WhatsApp (con 57)</label><input id="aw" value="${esc(cfg.wa)}"><label class="mu">¿Cómo te escriben los clientes?</label><select id="ac"><option value="both">Chat en la página y WhatsApp</option><option value="web" ${cfg.canal==="web"?"selected":""}>Solo chat en la página</option><option value="wa" ${cfg.canal==="wa"?"selected":""}>Solo WhatsApp</option></select><label class="mu">Logo de la tienda</label>${cfg.logo?`<img src="${cfg.logo}" style="max-width:160px;display:block;margin:6px 0;border-radius:10px">`:""}<label class="btn g">📷 ${cfg.logo?"Cambiar logo":"Subir logo"}<input type="file" accept="image/*" id="lgf" style="display:none"></label> ${cfg.logo?`<button class="btn g" id="lgx">Quitar logo</button>`:""}<br><br><button class="btn" id="as">Guardar</button></div>`}
+function aj(){$("#v").innerHTML=`<div class="card"><h2>Ajustes</h2><label class="mu">Número de Nequi</label><input id="an" value="${esc(cfg.nequi)}"><label class="mu">Indicaciones de pago</label><textarea id="ap" rows="3">${esc(cfg.pago)}</textarea><label class="mu">Tu WhatsApp (con 57)</label><input id="aw" value="${esc(cfg.wa)}"><label class="mu">¿Cómo te escriben los clientes?</label><select id="ac"><option value="both">Chat en la página y WhatsApp</option><option value="web" ${cfg.canal==="web"?"selected":""}>Solo chat en la página</option><option value="wa" ${cfg.canal==="wa"?"selected":""}>Solo WhatsApp</option></select><label class="mu">Logo de la tienda</label>${cfg.logo?`<img src="${cfg.logo}" style="max-width:160px;display:block;margin:6px 0;border-radius:10px">`:""}<label class="btn g">📷 ${cfg.logo?"Cambiar logo":"Subir logo"}<input type="file" accept="image/*" id="lgf" style="display:none"></label> ${cfg.logo?`<button class="btn g" id="lgx">Quitar logo</button>`:""}<br><br><label class="mu">Descripción de Pro Point (debajo del logo)</label><textarea id="ad" rows="4">${esc(cfg.desc)}</textarea><label class="mu">Llave Bre-B</label><input id="ab" value="${esc(cfg.breb)}"><label class="mu">Código QR de Nequi</label>${cfg.qr?`<img src="${cfg.qr}" style="max-width:160px;display:block;margin:6px 0;border-radius:10px;background:#fff;padding:6px">`:""}<label class="btn g">📷 ${cfg.qr?"Cambiar QR":"Subir QR"}<input type="file" accept="image/*" id="qrf" style="display:none"></label> ${cfg.qr?`<button class="btn g" id="qrx">Quitar QR</button>`:""}<br><br><button class="btn" id="as">Guardar</button></div>`}
 function loginV(){
   const reg=mode==="reg";
   $("#v").innerHTML=`<div class="card"><h2>${reg?"Crear mi perfil":"Entrar"}</h2>${reg?`<input id="rn" placeholder="Tu nombre"><input id="rt" placeholder="Tu WhatsApp" inputmode="tel">`:""}
@@ -175,6 +184,8 @@ document.addEventListener("click",async e=>{
   if(d.t==="out"){await signOut(auth);tab="tienda";R()}
   else if(d.t){if(d.reg)mode="reg";tab=d.t;msg="";chat=null;draft="";R()}
   else if(d.c){cat=d.c;R()}
+  else if(d.more){const x=t.previousElementSibling;OPN.has(d.more)?OPN.delete(d.more):OPN.add(d.more);x.classList.toggle("cl");t.textContent=OPN.has(d.more)?"Ver menos ⌃":"Ver más ⌄"}
+  else if(d.copy){try{await navigator.clipboard.writeText(d.copy);t.textContent="Copiado ✓"}catch(_){}}
   else if(d.mode){mode=d.mode;R()}
   else if(d.add){cart[d.add]=(cart[d.add]||0)+1;t.textContent="Agregado ✓";nav();if(tab==="cart")R()}
   else if(d.m){if(--cart[d.m]<=0)delete cart[d.m];R()}
@@ -206,15 +217,17 @@ document.addEventListener("click",async e=>{
   else if(d.del){if(confirm("¿Borrar este producto?"))await deleteDoc(doc(db,"products",d.del))}
   else if(d.rph){await updateDoc(doc(db,"products",d.rph),{img:""})}
   else if(t.id==="lgx"){await setDoc(doc(db,"config","main"),{logo:""},{merge:true})}
+  else if(t.id==="qrx"){await setDoc(doc(db,"config","main"),{qr:""},{merge:true})}
   else if(d.delu){if(confirm("¿Borrar este usuario y sus chats? No podrá entrar a la tienda.")){const b=writeBatch(db);b.delete(doc(db,"users",d.delu));M.filter(m=>m.uid===d.delu).forEach(m=>b.delete(doc(db,"msgs",m.id)));await b.commit()}}
   else if(d.rd)await updateDoc(doc(db,"msgs",d.rd),{leido:true});
-  else if(t.id==="as"){await setDoc(doc(db,"config","main"),{nequi:$("#an").value.trim(),pago:$("#ap").value,wa:$("#aw").value.replace(/\D/g,"")||"573243426972",canal:$("#ac").value},{merge:true});t.textContent="Guardado ✓"}
+  else if(t.id==="as"){await setDoc(doc(db,"config","main"),{nequi:$("#an").value.trim(),pago:$("#ap").value,wa:$("#aw").value.replace(/\D/g,"")||"573243426972",canal:$("#ac").value,desc:$("#ad").value.trim(),breb:$("#ab").value.trim()},{merge:true});t.textContent="Guardado ✓"}
 });
 document.addEventListener("change",async e=>{const t=e.target,d=t.dataset;
   if(t.id==="cimg"&&t.files[0]){chImg=await shrink(t.files[0],700);const x=$("#mt")||$("#rt");if(x)draft=x.value;R();return}
   if(t.id==="cf"&&t.files[0]){img=await shrink(t.files[0]);const f=$("#ffid")?.value;R();if(f)$("#ffid").value=f}
   if(d.ph&&t.files[0]){await updateDoc(doc(db,"products",d.ph),{img:await shrink(t.files[0],320)})}
   if(t.id==="lgf"&&t.files[0]){await setDoc(doc(db,"config","main"),{logo:await shrink(t.files[0],420,"image/png")},{merge:true})}
+  if(t.id==="qrf"&&t.files[0]){await setDoc(doc(db,"config","main"),{qr:await shrink(t.files[0],520,"image/png")},{merge:true})}
   if(d.e)await updateDoc(doc(db,"products",d.i),{[d.e]:d.e==="p"?+t.value:t.value});
   if(d.ff)await updateDoc(doc(db,"products",d.ff),{ff:t.checked})});
 document.addEventListener("input",e=>{if(e.target.id==="mt"||e.target.id==="rt")draft=e.target.value;if(e.target.id==="q"){q=e.target.value;const p=e.target.selectionStart;tienda();const i=$("#q");i.focus();i.setSelectionRange(p,p)}});
@@ -235,5 +248,5 @@ onAuthStateChanged(auth,async u=>{
     if(admin){unsub.push(onSnapshot(collection(db,"users"),s=>{USR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.ts-a.ts);R()}));if(tab==="login")tab="ped"}
   }
   if(tab==="login"&&u)tab="tienda";if(!u&&["tienda","cart"].includes(tab))tab="login";R()});
-R();
+logo();R();
 </script></body></html>
