@@ -103,6 +103,13 @@ let cfg={wa:"573243426972",canal:"both",nequi:"3243426972",pago:"",desc:"Pro Poi
 const OPN=new Set();
 const DEFPAGO="Paga con la llave Bre-B o escaneando el código QR, y sube la captura del comprobante.";
 const PG=()=>!cfg.pago||/nequi/i.test(cfg.pago)?DEFPAGO:cfg.pago;
+const CT={CO:["Colombia","COP","es-CO"],EC:["Ecuador","USD","es-EC"],PE:["Perú","PEN","es-PE"],MX:["México","MXN","es-MX"],AR:["Argentina","ARS","es-AR"],CL:["Chile","CLP","es-CL"],BO:["Bolivia","BOB","es-BO"],PY:["Paraguay","PYG","es-PY"],UY:["Uruguay","UYU","es-UY"],BR:["Brasil","BRL","pt-BR"],PA:["Panamá","USD","es-PA"],CR:["Costa Rica","CRC","es-CR"],GT:["Guatemala","GTQ","es-GT"],HN:["Honduras","HNL","es-HN"],SV:["El Salvador","USD","es-SV"],NI:["Nicaragua","NIO","es-NI"],DO:["Rep. Dominicana","DOP","es-DO"],VE:["Venezuela","USD","es-VE"],US:["Estados Unidos","USD","en-US"],ES:["España","EUR","es-ES"],XX:["Otro país","USD","en-US"]};
+let PAIS="CO";try{PAIS=localStorage.getItem("pais")||"CO"}catch(_){}if(!CT[PAIS])PAIS="CO";
+let RT=null;try{RT=JSON.parse(localStorage.getItem("rt")||"null")}catch(_){}
+const loadRates=async()=>{if(RT&&Date.now()-RT.t<432e5)return;try{const r=await(await fetch("https://open.er-api.com/v6/latest/COP")).json();if(r&&r.rates){RT={t:Date.now(),r:r.rates};try{localStorage.setItem("rt",JSON.stringify(RT))}catch(_){}if((tab==="tienda"||tab==="cart")&&!document.activeElement.matches("input,textarea"))R()}}catch(_){}};
+const mon=n=>{const[,c,l]=CT[PAIS];if(c==="COP"||!RT||!RT.r[c])return cop(n);try{return"≈ "+new Intl.NumberFormat(l,{style:"currency",currency:c}).format(n*RT.r[c])}catch(_){return cop(n)}};
+const paisOpts=()=>Object.entries(CT).map(([k,v])=>`<option value="${k}" ${k===PAIS?"selected":""}>${v[0]} (${v[1]})</option>`).join("");
+const PCS=()=>`<div class="row"><span class="mu">País / moneda</span><select id="pc" style="width:auto">${paisOpts()}</select></div>`;
 let NW={n:"",p:"",c:"",d:"",ff:false,img:"",v:[]};
 async function factura(o){
   const W=800,H=560+o.items.length*46+(o.ffid?36:0),c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
@@ -164,16 +171,16 @@ function tienda(){
   if(!U){$("#v").innerHTML=`<div class="card"><h2>Crea tu perfil para ver los productos</h2><p class="mu">Es gratis y rápido. Con tu perfil puedes ver el catálogo, comprar y escribirnos si tienes algún problema.</p><button class="btn" data-t="login" data-reg="1" style="width:100%">Crear mi perfil</button><br><br><button class="btn g" data-t="login">Ya tengo perfil, entrar</button></div>`;return}
   const cats=["Todos",...new Set(P.map(p=>p.c))];
   const L=P.filter(p=>(cat==="Todos"||p.c===cat)&&p.n.toLowerCase().includes(q.toLowerCase()));
-  $("#v").innerHTML=`<input id="q" placeholder="Buscar producto" value="${esc(q)}"><div class="tabs">${cats.map(c=>`<button class="chip ${cat===c?"on":""}" data-c="${c}">${c}</button>`).join("")}</div>`+
-  (L.map(p=>`<div class="card ${p.off?"off":""}"><div class="row"><div style="display:flex;align-items:center;gap:10px">${p.img?`<img src="${p.img}" style="width:64px;height:64px;object-fit:cover;border-radius:10px">`:""}<div>${esc(p.n)}<br><span class="tag ${p.off?"o":"c"}">${p.off?"Agotado":"Disponible"}</span>${vsel(p)}${p.d?descH(p):""}</div></div><div style="text-align:right"><div class="pr">${cop(pk(p).p)}</div>${p.off?"":pk(p).o?`<button class="btn" disabled>Agotado</button>`:`<button class="btn" data-add="${pk(p).k}">Agregar al carrito</button>`}</div></div></div>`).join("")||`<p class="mu">${P.length?"Sin resultados.":"Cargando catálogo…"}</p>`);
+  $("#v").innerHTML=`${PCS()}<input id="q" placeholder="Buscar producto" value="${esc(q)}"><div class="tabs">${cats.map(c=>`<button class="chip ${cat===c?"on":""}" data-c="${c}">${c}</button>`).join("")}</div>`+
+  (L.map(p=>`<div class="card ${p.off?"off":""}"><div class="row"><div style="display:flex;align-items:center;gap:10px">${p.img?`<img src="${p.img}" style="width:64px;height:64px;object-fit:cover;border-radius:10px">`:""}<div>${esc(p.n)}<br><span class="tag ${p.off?"o":"c"}">${p.off?"Agotado":"Disponible"}</span>${vsel(p)}${p.d?descH(p):""}</div></div><div style="text-align:right"><div class="pr">${mon(pk(p).p)}</div>${p.off?"":pk(p).o?`<button class="btn" disabled>Agotado</button>`:`<button class="btn" data-add="${pk(p).k}">Agregar al carrito</button>`}</div></div></div>`).join("")||`<p class="mu">${P.length?"Sin resultados.":"Cargando catálogo…"}</p>`);
 }
 function cartV(){
   const ids=Object.keys(cart).filter(i=>price(i));
   if(msg&&tab==="cart"&&!ids.length){$("#v").innerHTML=`<div class="card"><b>✅ ${esc(msg)}</b></div>`;return}
   if(!ids.length){$("#v").innerHTML=`<div class="card mu">Tu carrito está vacío.</div>`;return}
   const ff=ids.some(i=>price(i).ff);
-  $("#v").innerHTML=ids.map(i=>{const p=price(i);return`<div class="card row"><div>${esc(p.n)}<br><span class="mu">${cop(p.p)} c/u</span></div><div><button class="btn g" data-m="${i}">−</button> <b>${cart[i]}</b> <button class="btn g" data-add="${i}">+</button></div></div>`}).join("")+
-  `<div class="card"><div class="row"><b>Total</b><b style="font-size:20px">${cop(total())}</b></div>
+  $("#v").innerHTML=ids.map(i=>{const p=price(i);return`<div class="card row"><div>${esc(p.n)}<br><span class="mu">${mon(p.p)} c/u</span></div><div><button class="btn g" data-m="${i}">−</button> <b>${cart[i]}</b> <button class="btn g" data-add="${i}">+</button></div></div>`}).join("")+
+  `<div class="card"><div class="row"><b>Total</b><b style="font-size:20px">${mon(total())}</b></div>${CT[PAIS][1]!=="COP"?`<p class="mu">Se cobra en pesos colombianos: <b>${cop(total())}</b>. El valor en tu moneda es aproximado, según la tasa del día (<a href="https://www.exchangerate-api.com" target="_blank" rel="noopener" style="color:inherit">ExchangeRate-API</a>).</p>`:""}
   <div class="note" style="margin:10px 0">${esc(PG())}${cfg.breb?`<br><b>Llave Bre-B: ${esc(cfg.breb)}</b> <button class="btn g" style="padding:4px 10px" data-copy="${esc(cfg.breb)}">Copiar</button>`:""}${cfg.qr?`<img class="rc" src="${cfg.qr}" alt="Código QR de pago" style="display:block;margin:10px auto;max-width:230px;background:#fff;padding:8px">`:""}</div>
   ${U?`${ff?`<label class="mu">ID de Free Fire (obligatorio)</label><input id="ffid" inputmode="numeric" placeholder="Tu ID de jugador">`:""}
   <label class="mu">Foto o captura del pago</label><input id="cf" type="file" accept="image/*">${img?`<img class="rc" src="${img}">`:""}
@@ -213,7 +220,7 @@ function usr(){$("#v").innerHTML=USR.map(u=>`<div class="card"><b>${esc(u.nom)}<
 function aj(){$("#v").innerHTML=`<div class="card"><h2>Ajustes</h2><label class="mu">Indicaciones de pago</label><textarea id="ap" rows="3">${esc(PG())}</textarea><label class="mu">Tu WhatsApp (con 57)</label><input id="aw" value="${esc(cfg.wa)}"><label class="mu">¿Cómo te escriben los clientes?</label><select id="ac"><option value="both">Chat en la página y WhatsApp</option><option value="web" ${cfg.canal==="web"?"selected":""}>Solo chat en la página</option><option value="wa" ${cfg.canal==="wa"?"selected":""}>Solo WhatsApp</option></select><label class="mu">Logo de la tienda</label>${cfg.logo?`<img src="${cfg.logo}" style="max-width:160px;display:block;margin:6px 0;border-radius:10px">`:""}<label class="btn g">📷 ${cfg.logo?"Cambiar logo":"Subir logo"}<input type="file" accept="image/*" id="lgf" style="display:none"></label> ${cfg.logo?`<button class="btn g" id="lgx">Quitar logo</button>`:""}<br><br><label class="mu">Descripción de Pro Point (debajo del logo)</label><textarea id="ad" rows="4">${esc(cfg.desc)}</textarea><label class="mu">Facebook (link o @usuario)</label><input id="afb" value="${esc(cfg.fb||"")}"><label class="mu">Instagram (link o @usuario)</label><input id="ain" value="${esc(cfg.ig||"")}"><label class="mu">TikTok (link o @usuario)</label><input id="att" value="${esc(cfg.tt||"")}"><label class="mu">Llave Bre-B</label><input id="ab" value="${esc(cfg.breb)}"><label class="mu">Código QR de pago</label>${cfg.qr?`<img src="${cfg.qr}" style="max-width:160px;display:block;margin:6px 0;border-radius:10px;background:#fff;padding:6px">`:""}<label class="btn g">📷 ${cfg.qr?"Cambiar QR":"Subir QR"}<input type="file" accept="image/*" id="qrf" style="display:none"></label> ${cfg.qr?`<button class="btn g" id="qrx">Quitar QR</button>`:""}<br><br><button class="btn" id="as">Guardar</button></div>`}
 function loginV(){
   const reg=mode==="reg";
-  $("#v").innerHTML=`<div class="card"><h2>${reg?"Crear mi perfil":"Entrar"}</h2>${reg?`<input id="rn" placeholder="Tu nombre"><input id="rt" placeholder="Tu WhatsApp" inputmode="tel">`:""}
+  $("#v").innerHTML=`<div class="card"><h2>${reg?"Crear mi perfil":"Entrar"}</h2>${reg?`<input id="rn" placeholder="Tu nombre"><input id="rt" placeholder="Tu WhatsApp" inputmode="tel"><label class="mu">País (para ver los precios en tu moneda)</label><select id="rc">${paisOpts()}</select>`:""}
   <input id="re" type="email" placeholder="Correo"><input id="rp" type="password" placeholder="Contraseña (mín. 6)"><button class="btn" id="go" style="width:100%">${reg?"Registrarme":"Entrar"}</button><p class="mu" id="er"></p>
   <button class="btn g" data-mode="${reg?"in":"reg"}">${reg?"Ya tengo perfil":"Crear perfil nuevo"}</button> ${reg?"":`<button class="btn g" id="fp">Olvidé mi contraseña</button>`}</div>`}
 
@@ -234,7 +241,7 @@ document.addEventListener("click",async e=>{
     const er=$("#er"),em=$("#re").value.trim(),pw=$("#rp").value;er.textContent="";
     try{
       if(mode==="reg"){const n=$("#rn").value.trim(),w=$("#rt").value.trim();if(!n||!w){er.textContent="Pon tu nombre y WhatsApp.";return}
-        const c=await createUserWithEmailAndPassword(auth,em,pw);await setDoc(doc(db,"users",c.user.uid),{nom:n,tel:w,email:em,ts:Date.now()})}
+        PAIS=$("#rc").value;try{localStorage.setItem("pais",PAIS)}catch(_){}const c=await createUserWithEmailAndPassword(auth,em,pw);await setDoc(doc(db,"users",c.user.uid),{nom:n,tel:w,email:em,pais:$("#rc").value,ts:Date.now()})}
       else await signInWithEmailAndPassword(auth,em,pw);tab="tienda"}
     catch(x){er.textContent=E(x.code)}}
   else if(t.id==="fp"){const em=$("#re").value.trim();if(em){await sendPasswordResetEmail(auth,em);$("#er").textContent="Te enviamos un correo para cambiar la contraseña."}}
@@ -277,7 +284,8 @@ document.addEventListener("change",async e=>{const t=e.target,d=t.dataset;
   if(d.ph&&t.files[0]){await updateDoc(doc(db,"products",d.ph),{img:await shrink(t.files[0],320)})}
   if(t.id==="lgf"&&t.files[0]){await setDoc(doc(db,"config","main"),{logo:await shrink(t.files[0],420,"image/png")},{merge:true})}
   if(t.id==="qrf"&&t.files[0]){await setDoc(doc(db,"config","main"),{qr:await shrink(t.files[0],520,"image/png")},{merge:true})}
-  if(d.vs){SEL[d.vs]=+t.value;const p=P.find(x=>x.id===d.vs),c=t.closest(".card"),b=c.querySelector("[data-add]");c.querySelector(".pr").textContent=cop(p.v[+t.value].p);if(b){const o=p.v[+t.value].o;b.dataset.add=d.vs+"#"+t.value;b.disabled=!!o;b.textContent=o?"Agotado":"Agregar al carrito"}return}
+  if(t.id==="pc"){PAIS=t.value;try{localStorage.setItem("pais",PAIS)}catch(_){}if(U)try{await updateDoc(doc(db,"users",U.uid),{pais:PAIS})}catch(_){}R();return}
+  if(d.vs){SEL[d.vs]=+t.value;const p=P.find(x=>x.id===d.vs),c=t.closest(".card"),b=c.querySelector("[data-add]");c.querySelector(".pr").textContent=mon(p.v[+t.value].p);if(b){const o=p.v[+t.value].o;b.dataset.add=d.vs+"#"+t.value;b.disabled=!!o;b.textContent=o?"Agotado":"Agregar al carrito"}return}
   if(d.vt!==undefined||d.vp!==undefined){const id=d.vt!==undefined?d.vt:d.vp,p=P.find(x=>x.id===id),v=(p.v||[]).map(x=>({...x})),j=+d.j;if(d.vt!==undefined)v[j].t=t.value.trim();else v[j].p=+t.value;await updateDoc(doc(db,"products",id),{v});return}
   if(d.e)await updateDoc(doc(db,"products",d.i),{[d.e]:d.e==="p"?+t.value:t.value});
   if(d.ff)await updateDoc(doc(db,"products",d.ff),{ff:t.checked})});
@@ -289,7 +297,7 @@ onAuthStateChanged(auth,async u=>{
   unsub.forEach(f=>f());unsub=[];U=u;admin=!!u&&String(u.email).toLowerCase()===ADMIN.toLowerCase();O=[];M=[];USR=[];prof=null;if(!u)P=[];
   if(u){
     unsub.push(subP());
-    unsub.push(onSnapshot(doc(db,"users",u.uid),s=>{prof=s.data()||null}));
+    unsub.push(onSnapshot(doc(db,"users",u.uid),s=>{prof=s.data()||null;if(prof&&prof.pais&&CT[prof.pais]&&prof.pais!==PAIS){PAIS=prof.pais;try{localStorage.setItem("pais",PAIS)}catch(_){}if(tab==="tienda"||tab==="cart")R()}}));
     const oq=admin?collection(db,"orders"):query(collection(db,"orders"),where("uid","==",u.uid));
     let first=true;
     unsub.push(onSnapshot(oq,s=>{if(admin&&!first&&s.docChanges().some(c=>c.type==="added"))try{navigator.vibrate?.(200)}catch(_){}first=false;
@@ -299,5 +307,5 @@ onAuthStateChanged(auth,async u=>{
     if(admin){unsub.push(onSnapshot(collection(db,"users"),s=>{USR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.ts-a.ts);R()},perr));if(tab==="login")tab="ped"}
   }
   if(tab==="login"&&u)tab="tienda";if(!u&&["tienda","cart"].includes(tab))tab="login";R()});
-logo();R();
+loadRates();logo();R();
 </script></body></html>
